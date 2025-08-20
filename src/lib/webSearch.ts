@@ -182,7 +182,30 @@ function singleSourceFallback(articles: NewsArticle[]): ScandalEvent[] {
       };
     });
 }
-
+function singleSourceFallback(articles: NewsArticle[]): ScandalEvent[] {
+  const dedup = new Map<string, NewsArticle>();
+  for (const a of articles) {
+    if (!a.title || !a.url) continue;
+    const key = normalizeTitle(a.title);
+    if (!dedup.has(key)) dedup.set(key, a);
+  }
+  return Array.from(dedup.values())
+    .slice(0, 10)
+    .map((a) => {
+      const text = `${a.title} ${a.description ?? ""}`;
+      return {
+        id: `one-${Buffer.from(normalizeTitle(a.title)).toString("base64").slice(0, 12)}`,
+        entityName: extractEntityName(a.title),
+        title: a.title,
+        date: a.publishedAt || new Date().toISOString(),
+        description: a.description || a.title,
+        categories: guessCategories(text),
+        sources: [{ url: a.url, publisher: a.source, reliabilityScore: 70 }],
+        baseScore: baseScoreFromSignals([a]),
+        ideologicalTilt: guessIdeologicalTilt(text),
+      };
+    });
+}
 export async function searchControversies(query: string): Promise<ScandalEvent[]> {
   const articles: NewsArticle[] = [
     ...(await fetchNewsApi(query)),
