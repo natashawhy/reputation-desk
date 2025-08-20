@@ -38,21 +38,51 @@ function guessIdeologicalTilt(text: string): number {
   return Math.max(-100, Math.min(100, tilt));
 }
 
+// NEW: Better scandal detection
+function isScandalousContent(text: string): boolean {
+  const t = text.toLowerCase();
+  
+  // Controversial keywords that indicate scandal
+  const scandalKeywords = [
+    'scandal', 'controversy', 'backlash', 'outrage', 'protest', 'boycott',
+    'lawsuit', 'investigation', 'allegations', 'accusations', 'misconduct',
+    'violation', 'breach', 'leak', 'exposed', 'revealed', 'whistleblower',
+    'resignation', 'fired', 'suspended', 'penalty', 'fine', 'settlement',
+    'crisis', 'emergency', 'recall', 'defective', 'unsafe', 'harmful',
+    'discrimination', 'harassment', 'racism', 'sexism', 'bias', 'prejudice',
+    'corruption', 'bribery', 'fraud', 'embezzlement', 'tax evasion',
+    'environmental damage', 'pollution', 'climate denial', 'greenwashing'
+  ];
+  
+  return scandalKeywords.some(keyword => t.includes(keyword));
+}
+
+// NEW: Enhanced scoring for scandalous content
 function baseScoreFromSignals(a: NewsArticle[]): number {
   let score = 55;
+  
+  // Boost score for scandalous content
+  const allText = a.map(article => `${article.title} ${article.description || ''}`).join(' ');
+  if (isScandalousContent(allText)) {
+    score += 25; // Significant boost for scandalous content
+  }
+  
   const sources = new Set(a.map((x) => x.source.toLowerCase())).size;
   score += Math.min(10, (sources - 2) * 3);
+  
   const mostRecent = a
     .map((x) => (x.publishedAt ? Date.parse(x.publishedAt) : 0))
     .filter(Boolean)
     .sort((x, y) => y - x)[0];
+    
   if (mostRecent) {
     const days = (Date.now() - mostRecent) / (1000 * 60 * 60 * 24);
     if (days < 14) score += 8;
     else if (days < 60) score += 4;
     else if (days < 180) score += 2;
   }
-  return Math.max(30, Math.min(85, score));
+  
+  return Math.max(30, Math.min(100, score));
 }
 
 function toScandalEvents(clusters: Map<string, NewsArticle[]>): ScandalEvent[] {
@@ -190,8 +220,17 @@ export async function searchControversies(query: string): Promise<ScandalEvent[]
   ];
   if (articles.length === 0) return [];
 
+  // NEW: Pre-filter for scandalous content
+  const scandalousArticles = articles.filter(article => {
+    const text = `${article.title} ${article.description || ''}`;
+    return isScandalousContent(text);
+  });
+
+  // If we have scandalous articles, use those; otherwise fall back to all articles
+  const articlesToProcess = scandalousArticles.length > 0 ? scandalousArticles : articles;
+
   const clusters = new Map<string, NewsArticle[]>();
-  for (const a of articles) {
+  for (const a of articlesToProcess) {
     if (!a.title || !a.url) continue;
     const key = normalizeTitle(a.title);
     const list = clusters.get(key) || [];
@@ -201,8 +240,21 @@ export async function searchControversies(query: string): Promise<ScandalEvent[]
 
   let events = toScandalEvents(clusters);
   if (events.length === 0) {
-    events = singleSourceFallback(articles);
+    events = singleSourceFallback(articlesToProcess);
   }
 
-  return events.sort((a, b) => (b.baseScore || 0) - (a.baseScore || 0)).slice(0, 10);
+  // NEW: Sort by scandal score first, then by base score
+  return events
+    .sort((a, b) => {
+      // Prioritize scandalous content
+      const aScandalous = isScandalousContent(`${a.title} ${a.description}`);
+      const bScandalous = isScandalousContent(`${b.title} ${b.description}`);
+      
+      if (aScandalous && !bScandalous) return -1;
+      if (!aScandalous && bScandalous) return 1;
+      
+      // Then sort by score
+      return (b.baseScore || 0) - (a.baseScore || 0);
+    })
+    .slice(0, 10);
 }

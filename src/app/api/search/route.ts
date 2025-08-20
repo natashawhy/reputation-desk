@@ -33,21 +33,43 @@ export async function GET(req: NextRequest) {
   }
   let results;
   if (events.length > 0) {
-    // Compute adjusted score similar to sample filterAndRank
+    // IMPROVED: Better perspective adjustment calculation
     const centerPerspective = p - 50; // -50..+50
     results = events
       .map((event) => {
         const tilt = event.ideologicalTilt; // -100..+100
-        const alignment = (tilt / 100) * (centerPerspective / 50); // -1..+1
-        const adjustment = alignment * 20; // up to +/-20
+        
+        // Enhanced perspective adjustment based on ideological alignment
+        let adjustment = 0;
+        
+        if (centerPerspective !== 0 && tilt !== 0) {
+          // Calculate how much the user's perspective aligns with the event's tilt
+          const alignment = (tilt / 100) * (centerPerspective / 50); // -1..+1
+          
+          // More dramatic adjustment for stronger ideological differences
+          if (Math.abs(alignment) > 0.5) {
+            adjustment = alignment * 30; // Up to +/-30 for strong alignment
+          } else {
+            adjustment = alignment * 20; // Up to +/-20 for moderate alignment
+          }
+          
+          // Add bonus for events that strongly align with user's perspective
+          if (Math.abs(alignment) > 0.7) {
+            adjustment += Math.sign(alignment) * 10; // Extra 10 points for strong alignment
+          }
+        }
+        
+        // Credibility boost from multiple reliable sources
         const credibilityBoost = Math.min(
-          10,
+          15, // Increased from 10
           Math.max(0, event.sources.reduce((acc, s) => acc + s.reliabilityScore, 0) / 200)
         );
+        
         const adjustedScore = Math.max(
           0,
           Math.min(100, (event.baseScore || 55) + adjustment + credibilityBoost)
         );
+        
         return { event, adjustedScore };
       })
       .sort((a, b) => b.adjustedScore - a.adjustedScore)
