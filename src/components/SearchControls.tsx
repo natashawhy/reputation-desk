@@ -10,7 +10,7 @@ export function SearchControls() {
   const [query, setQuery] = useState('');
   const [perspective, setPerspective] = useState(50);
 
-  const { data, isLoading, error } = useSWR<SearchResponse>(
+  const { data, isLoading, error } = useSWR<SearchResponse, Error>(
     `/api/search?q=${encodeURIComponent(query)}&p=${perspective}`,
     fetcher,
     { revalidateOnFocus: false }
@@ -51,7 +51,7 @@ export function SearchControls() {
         </div>
       </div>
 
-      <ResultsPanel data={data} loading={isLoading} error={error as any} />
+      <ResultsPanel data={data} loading={isLoading} error={error ?? undefined} />
     </div>
   );
 }
