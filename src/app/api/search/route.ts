@@ -22,15 +22,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
   const { q, p } = parsed.data;
-  // Try live web search if query provided and keys configured; fallback to local sample
- let events: ScandalEvent[] = [];
-try {
-  if (q) {
-    events = await searchControversies(q);
-  }
-} catch {
-  // ignore and fallback
-}
+  // Try live web search; fallback to local sample
+  let events: ScandalEvent[] = [];
+  try {
+    if (q) {
+      events = await searchControversies(q);
+    }
   } catch {
     // ignore and fallback
   }

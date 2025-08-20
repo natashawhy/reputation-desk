@@ -62,7 +62,7 @@ function ResultsPanel({ data, loading, error }: { data?: SearchResponse; loading
   }
   return (
     <div className="rounded-lg border border-stone-700 bg-stone-800/60">
-      <div className="border-b border-stone-700 px-3 py-2 text-sm text-stone-300">Top-5 most scandalous (≥2 sources)</div>
+      <div className="border-b border-stone-700 px-3 py-2 text-sm text-stone-300">Top results (prioritizes 2+ sources)</div>
       <div className="p-3">
         {loading && <div className="text-stone-400 text-sm">Loading…</div>}
         {!loading && data && data.results.length === 0 && (
