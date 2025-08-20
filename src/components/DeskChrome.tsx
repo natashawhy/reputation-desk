@@ -3,10 +3,18 @@ import { Folder, Scale, FileWarning, Newspaper } from "lucide-react";
 
 export function DeskChrome({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-stone-900 text-stone-100">
+    <div className="min-h-screen bg-stone-900 text-stone-100 relative">
+      {/* Evidence board background overlay */}
+      <div className="pointer-events-none select-none absolute inset-0 opacity-15"
+           style={{ 
+             backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><defs><pattern id="cork" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse"><rect width="120" height="120" fill="%238B4513"/><circle cx="20" cy="20" r="2" fill="%23A0522D" opacity="0.6"/><circle cx="60" cy="40" r="1.5" fill="%23A0522D" opacity="0.4"/><circle cx="100" cy="30" r="1" fill="%23A0522D" opacity="0.5"/><circle cx="30" cy="80" r="1.8" fill="%23A0522D" opacity="0.3"/><circle cx="80" cy="90" r="1.2" fill="%23A0522D" opacity="0.4"/><circle cx="110" cy="70" r="1.5" fill="%23A0522D" opacity="0.3"/><rect x="15" y="15" width="4" height="4" fill="%23A0522D" opacity="0.2" rx="1"/><rect x="85" y="25" width="3" height="3" fill="%23A0522D" opacity="0.3" rx="1"/><rect x="25" y="85" width="5" height="2" fill="%23A0522D" opacity="0.2" rx="1"/><rect x="95" y="85" width="2" height="4" fill="%23A0522D" opacity="0.3" rx="1"/></pattern></defs><rect width="120" height="120" fill="url(%23cork)"/></svg>')` 
+           }} />
+      
+      {/* Subtle grid pattern overlay */}
+      <div className="pointer-events-none select-none absolute inset-0 opacity-5"
+           style={{ backgroundImage: "url('data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\'><rect width=\\'40\\' height=\\'40\\' fill=\\'%23222222\\'/><path d=\\'M0 39h40M0 0h40M39 0v40M0 0v40\\' stroke=\\'%23444444\\' stroke-width=\\'1\\'/></svg>')" }} />
+      
       <div className="relative mx-auto max-w-6xl px-4">
-        <div className="pointer-events-none select-none absolute inset-0 opacity-10"
-             style={{ backgroundImage: "url('data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'40\\' height=\\'40\\'><rect width=\\'40\\' height=\\'40\\' fill=\\'%23222222\\'/><path d=\\'M0 39h40M0 0h40M39 0v40M0 0v40\\' stroke=\\'%23444444\\' stroke-width=\\'1\\'/></svg>')" }} />
         <header className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-stone-900/70">
           <div className="flex items-center gap-3 py-4">
             <Folder className="text-amber-400" />
@@ -45,7 +53,7 @@ export function DeskChrome({ children }: { children: ReactNode }) {
 
 function Panel({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-stone-700 bg-stone-800/60 shadow-inner">
+    <div className="rounded-lg border border-stone-700 bg-stone-800/60 shadow-inner backdrop-blur-sm">
       <div className="flex items-center gap-2 border-b border-stone-700 px-3 py-2 text-stone-200">
         {icon}
         <span className="text-sm font-medium">{title}</span>

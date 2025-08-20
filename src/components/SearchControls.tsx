@@ -24,13 +24,13 @@ export function SearchControls() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-stone-700 bg-stone-800/60 p-3">
+      <div className="rounded-lg border border-stone-700 bg-stone-800/60 p-3 backdrop-blur-sm shadow-inner">
         <label className="mb-2 block text-sm text-stone-300">Search a brand or person</label>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
             <input
-              className="w-full rounded-md border border-stone-600 bg-stone-900/60 pl-9 pr-3 py-2 text-sm outline-none focus:border-amber-500"
+              className="w-full rounded-md border border-stone-600 bg-stone-900/60 pl-9 pr-3 py-2 text-sm outline-none focus:border-amber-500 backdrop-blur-sm"
               placeholder="e.g. Brand A or Public Figure B"
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -61,7 +61,7 @@ function ResultsPanel({ data, loading, error }: { data?: SearchResponse; loading
     return <div className="text-red-400">Error loading results</div>;
   }
   return (
-    <div className="rounded-lg border border-stone-700 bg-stone-800/60">
+    <div className="rounded-lg border border-stone-700 bg-stone-800/60 shadow-inner backdrop-blur-sm">
       <div className="border-b border-stone-700 px-3 py-2 text-sm text-stone-300">Top results (prioritizes 2+ sources)</div>
       <div className="p-3">
         {loading && <div className="text-stone-400 text-sm">Loading…</div>}
@@ -71,7 +71,7 @@ function ResultsPanel({ data, loading, error }: { data?: SearchResponse; loading
         {!loading && data && data.results.length > 0 && (
           <div className="space-y-3">
             {data.results.map(({ event, adjustedScore }) => (
-              <div key={event.id} className="rounded-md border border-stone-700 bg-stone-900/40 p-3">
+              <div key={event.id} className="rounded-md border border-stone-700 bg-stone-900/40 p-3 backdrop-blur-sm hover:bg-stone-900/50 transition-colors">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-medium text-stone-100">{event.title}</div>
@@ -100,7 +100,7 @@ function ResultsPanel({ data, loading, error }: { data?: SearchResponse; loading
 function ScoreBadge({ score }: { score: number }) {
   const color = score >= 75 ? 'bg-red-600' : score >= 60 ? 'bg-amber-500' : 'bg-emerald-600';
   return (
-    <div className={`rounded-md ${color} px-2 py-1 text-xs font-semibold text-white`}>Scandal {Math.round(score)}</div>
+    <div className={`rounded-md ${color} px-2 py-1 text-xs font-semibold text-white shadow-sm`}>Scandal {Math.round(score)}</div>
   );
 }
 
