@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { filterAndRank } from "@/lib/sampleData";
-import { SearchResponse } from "@/types/scandal";
+import { SearchResponse, ScandalEvent } from "@/types/scandal";
+import { searchControversies } from "@/lib/webSearch";
 
 const querySchema = z.object({
   q: z.string().optional().default(""),
@@ -18,7 +19,39 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
   const { q, p } = parsed.data;
-  const results = filterAndRank(q, p);
+  // Try live web search if query provided and keys configured; fallback to local sample
+  let events: ScandalEvent[] = [];
+  try {
+    if (q && (process.env.NEWSAPI_KEY || process.env.SERPER_API_KEY)) {
+      events = await searchControversies(q);
+    }
+  } catch {
+    // ignore and fallback
+  }
+  let results;
+  if (events.length > 0) {
+    // Compute adjusted score similar to sample filterAndRank
+    const centerPerspective = p - 50; // -50..+50
+    results = events
+      .map((event) => {
+        const tilt = event.ideologicalTilt; // -100..+100
+        const alignment = (tilt / 100) * (centerPerspective / 50); // -1..+1
+        const adjustment = alignment * 20; // up to +/-20
+        const credibilityBoost = Math.min(
+          10,
+          Math.max(0, event.sources.reduce((acc, s) => acc + s.reliabilityScore, 0) / 200)
+        );
+        const adjustedScore = Math.max(
+          0,
+          Math.min(100, (event.baseScore || 55) + adjustment + credibilityBoost)
+        );
+        return { event, adjustedScore };
+      })
+      .sort((a, b) => b.adjustedScore - a.adjustedScore)
+      .slice(0, 5);
+  } else {
+    results = filterAndRank(q, p);
+  }
   const payload: SearchResponse = {
     query: q,
     perspective: p,

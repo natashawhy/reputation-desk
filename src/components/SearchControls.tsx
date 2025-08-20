@@ -7,6 +7,7 @@ import { SearchResponse } from '@/types/scandal';
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function SearchControls() {
+  const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [perspective, setPerspective] = useState(50);
 
@@ -17,10 +18,9 @@ export function SearchControls() {
   );
 
   useEffect(() => {
-    // debounce typing for better UX
-    const t = setTimeout(() => setQuery(query), 150);
+    const t = setTimeout(() => setQuery(input.trim()), 300);
     return () => clearTimeout(t);
-  }, [query]);
+  }, [input]);
 
   return (
     <div className="space-y-4">
@@ -32,8 +32,8 @@ export function SearchControls() {
             <input
               className="w-full rounded-md border border-stone-600 bg-stone-900/60 pl-9 pr-3 py-2 text-sm outline-none focus:border-amber-500"
               placeholder="e.g. Brand A or Public Figure B"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
             />
           </div>
           <div className="w-60">
