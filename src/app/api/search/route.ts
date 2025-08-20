@@ -3,6 +3,9 @@ import { z } from "zod";
 import { filterAndRank } from "@/lib/sampleData";
 import { SearchResponse, ScandalEvent } from "@/types/scandal";
 import { searchControversies } from "@/lib/webSearch";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const runtime = 'nodejs';
 
 const querySchema = z.object({
   q: z.string().optional().default(""),
@@ -20,11 +23,14 @@ export async function GET(req: NextRequest) {
   }
   const { q, p } = parsed.data;
   // Try live web search if query provided and keys configured; fallback to local sample
-  let events: ScandalEvent[] = [];
-  try {
-    if (q && (process.env.NEWSAPI_KEY || process.env.SERPER_API_KEY)) {
-      events = await searchControversies(q);
-    }
+ let events: ScandalEvent[] = [];
+try {
+  if (q) {
+    events = await searchControversies(q);
+  }
+} catch {
+  // ignore and fallback
+}
   } catch {
     // ignore and fallback
   }
