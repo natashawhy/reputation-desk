@@ -10,9 +10,10 @@ export function SearchControls() {
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
   const [perspective, setPerspective] = useState(50);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
 
   const { data, isLoading, error } = useSWR<SearchResponse, Error>(
-    `/api/search?q=${encodeURIComponent(query)}&p=${perspective}`,
+    `/api/search?q=${encodeURIComponent(query)}&p=${perspective}&lang=${selectedLanguage}`,
     fetcher,
     { revalidateOnFocus: false }
   );
@@ -21,6 +22,15 @@ export function SearchControls() {
     const t = setTimeout(() => setQuery(input.trim()), 300);
     return () => clearTimeout(t);
   }, [input]);
+
+  const handleLanguageSelect = (language: string) => {
+    setSelectedLanguage(language);
+    // Reset query to trigger new search with selected language
+    if (query) {
+      setQuery('');
+      setTimeout(() => setQuery(query), 100);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -49,20 +59,105 @@ export function SearchControls() {
             <div className="text-right text-xs text-stone-400">{perspective}</div>
           </div>
         </div>
+        
+        {/* Language Selection */}
+        <div className="mt-3 pt-3 border-t border-stone-600">
+          <label className="mb-2 block text-xs text-stone-400">Search Language</label>
+          <div className="flex gap-2">
+            <LanguageButton 
+              language="en" 
+              flag="🇺🇸" 
+              name="English"
+              isSelected={selectedLanguage === 'en'}
+              onClick={() => handleLanguageSelect('en')}
+            />
+            <LanguageButton 
+              language="es" 
+              flag="🇪🇸" 
+              name="Español"
+              isSelected={selectedLanguage === 'es'}
+              onClick={() => handleLanguageSelect('es')}
+            />
+            <LanguageButton 
+              language="ru" 
+              flag="🇷🇺" 
+              name="Русский"
+              isSelected={selectedLanguage === 'ru'}
+              onClick={() => handleLanguageSelect('ru')}
+            />
+            <LanguageButton 
+              language="fr" 
+              flag="🇫🇷" 
+              name="Français"
+              isSelected={selectedLanguage === 'fr'}
+              onClick={() => handleLanguageSelect('fr')}
+            />
+          </div>
+        </div>
       </div>
 
-      <ResultsPanel data={data} loading={isLoading} error={error ?? undefined} />
+      <ResultsPanel data={data} loading={isLoading} error={error ?? undefined} selectedLanguage={selectedLanguage} />
     </div>
   );
 }
 
-function ResultsPanel({ data, loading, error }: { data?: SearchResponse; loading: boolean; error?: Error }) {
+function LanguageButton({ 
+  language, 
+  flag, 
+  name, 
+  isSelected, 
+  onClick 
+}: { 
+  language: string; 
+  flag: string; 
+  name: string;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-2 rounded text-xs font-medium transition-colors ${
+        isSelected 
+          ? 'bg-amber-600 text-white' 
+          : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+      }`}
+    >
+      <div className="flex items-center gap-1">
+        <span>{flag}</span>
+        <span>{name}</span>
+      </div>
+    </button>
+  );
+}
+
+function ResultsPanel({ data, loading, error, selectedLanguage }: { 
+  data?: SearchResponse; 
+  loading: boolean; 
+  error?: Error;
+  selectedLanguage: string;
+}) {
   if (error) {
     return <div className="text-red-400">Error loading results</div>;
   }
+  
+  const getLanguageName = (lang: string) => {
+    const names = { en: 'English', es: 'Spanish', ru: 'Russian', fr: 'French' };
+    return names[lang as keyof typeof names] || 'Unknown';
+  };
+  
   return (
     <div className="rounded-lg border border-stone-700 bg-stone-800/60 shadow-inner backdrop-blur-sm">
-      <div className="border-b border-stone-700 px-3 py-2 text-sm text-stone-300">Top results (prioritizes 2+ sources)</div>
+      <div className="border-b border-stone-700 px-3 py-2 text-sm text-stone-300">
+        <div className="flex items-center justify-between">
+          <span>Top results (prioritizes 2+ sources)</span>
+          {selectedLanguage !== 'en' && (
+            <span className="text-amber-400 text-xs">
+              Searching in {getLanguageName(selectedLanguage)}
+            </span>
+          )}
+        </div>
+      </div>
       <div className="p-3">
         {loading && <div className="text-stone-400 text-sm">Loading…</div>}
         {!loading && data && data.results.length === 0 && (
@@ -75,7 +170,12 @@ function ResultsPanel({ data, loading, error }: { data?: SearchResponse; loading
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-medium text-stone-100">{event.title}</div>
-                    <div className="text-xs text-stone-400">{event.entityName} • {new Date(event.date).toLocaleDateString()} • {event.categories.join(', ')}</div>
+                    <div className="text-xs text-stone-400">
+                      {event.entityName} • {new Date(event.date).toLocaleDateString()} • {event.categories.join(', ')}
+                      {event.language && event.language !== 'en' && (
+                        <span className="ml-2 text-amber-400">• {getLanguageName(event.language)}</span>
+                      )}
+                    </div>
                     <p className="mt-2 text-sm text-stone-200">{event.description}</p>
                     <div className="mt-2 text-xs text-stone-400 space-x-2">
                       {event.sources.map((s, idx) => (

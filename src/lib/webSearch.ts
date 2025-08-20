@@ -6,6 +6,7 @@ type NewsArticle = {
   url: string;
   source: string;
   publishedAt?: string;
+  language?: string;
 };
 
 function normalizeTitle(title: string): string {
@@ -116,12 +117,59 @@ function extractEntityName(title: string): string {
   return tokens.slice(0, 3).join(" ") || "Subject";
 }
 
-async function fetchNewsApi(query: string): Promise<NewsArticle[]> {
+// NEW: Language-specific news sources
+const LANGUAGE_SOURCES = {
+  es: {
+    name: "Spanish",
+    sources: [
+      "El País",
+      "El Mundo",
+      "ABC",
+      "La Vanguardia",
+      "El Periódico",
+      "20 Minutos",
+      "El Confidencial",
+      "Público"
+    ]
+  },
+  ru: {
+    name: "Russian", 
+    sources: [
+      "Российская газета",
+      "Известия",
+      "Коммерсантъ",
+      "Ведомости",
+      "РБК",
+      "Интерфакс",
+      "ТАСС",
+      "РИА Новости"
+    ]
+  },
+  fr: {
+    name: "French",
+    sources: [
+      "Le Monde",
+      "Le Figaro", 
+      "Libération",
+      "L'Équipe",
+      "Le Parisien",
+      "L'Humanité",
+      "Les Échos",
+      "Le Point"
+    ]
+  }
+};
+
+async function fetchNewsApi(query: string, language?: string): Promise<NewsArticle[]> {
   const apiKey = process.env.NEWSAPI_KEY;
   if (!apiKey) return [];
-  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&language=en&pageSize=20&sortBy=publishedAt`;
+  
+  const langParam = language ? `&language=${language}` : "&language=en";
+  const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}${langParam}&pageSize=20&sortBy=publishedAt`;
+  
   const res = await fetch(url, { headers: { "X-Api-Key": apiKey } });
   if (!res.ok) return [];
+  
   const data: {
     articles?: Array<{
       title?: string;
@@ -131,42 +179,55 @@ async function fetchNewsApi(query: string): Promise<NewsArticle[]> {
       publishedAt?: string;
     }>;
   } = await res.json();
+  
   const arts: NewsArticle[] = (data.articles || []).map((a) => ({
     title: a.title || "",
     description: a.description || "",
     url: a.url,
     source: a.source?.name || "Unknown",
     publishedAt: a.publishedAt,
+    language: language || "en"
   }));
+  
   return arts;
 }
 
-async function fetchGoogleNewsRSS(query: string): Promise<NewsArticle[]> {
-  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+async function fetchGoogleNewsRSS(query: string, language?: string): Promise<NewsArticle[]> {
+  const langCode = language || "en";
+  const countryCode = language === "es" ? "ES" : language === "ru" ? "RU" : language === "fr" ? "FR" : "US";
+  
+  const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${langCode}-${countryCode}&gl=${countryCode}&ceid=${countryCode}:${langCode}`;
+  
   try {
     const res = await fetch(url, { headers: { "User-Agent": "ReputationDesk/1.0" } });
     if (!res.ok) return [];
+    
     const xml = await res.text();
     const items = xml.split("<item>").slice(1);
+    
     const articles: NewsArticle[] = items.slice(0, 25).map((chunk) => {
       const title = matchTag(chunk, "title");
       const link = matchTag(chunk, "link");
       const pubDate = matchTag(chunk, "pubDate");
       let source = matchTag(chunk, "source") || "Google News";
+      
       // If title contains " - Source" suffix, extract it
       const dashIdx = title.lastIndexOf(" - ");
       if (dashIdx > 0 && dashIdx < title.length - 3) {
         source = title.slice(dashIdx + 3).trim();
       }
       const cleanTitle = dashIdx > 0 ? title.slice(0, dashIdx).trim() : title;
+      
       return {
         title: decodeEntities(cleanTitle),
         description: "",
         url: decodeEntities(link),
         source: decodeEntities(source),
         publishedAt: pubDate ? new Date(pubDate).toISOString() : undefined,
+        language: language || "en"
       };
     });
+    
     return articles.filter((a) => a.title && a.url);
   } catch {
     return [];
@@ -213,11 +274,12 @@ function singleSourceFallback(articles: NewsArticle[]): ScandalEvent[] {
     });
 }
 
-export async function searchControversies(query: string): Promise<ScandalEvent[]> {
+export async function searchControversies(query: string, language?: string): Promise<ScandalEvent[]> {
   const articles: NewsArticle[] = [
-    ...(await fetchNewsApi(query)),
-    ...(await fetchGoogleNewsRSS(query)),
+    ...(await fetchNewsApi(query, language)),
+    ...(await fetchGoogleNewsRSS(query, language)),
   ];
+  
   if (articles.length === 0) return [];
 
   // NEW: Pre-filter for scandalous content
@@ -257,4 +319,13 @@ export async function searchControversies(query: string): Promise<ScandalEvent[]
       return (b.baseScore || 0) - (a.baseScore || 0);
     })
     .slice(0, 10);
+}
+
+// NEW: Language-specific search function
+export async function searchControversiesByLanguage(query: string, language: string): Promise<ScandalEvent[]> {
+  if (!LANGUAGE_SOURCES[language as keyof typeof LANGUAGE_SOURCES]) {
+    return searchControversies(query); // Fallback to default search
+  }
+  
+  return searchControversies(query, language);
 }

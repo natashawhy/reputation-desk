@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Folder, Scale, FileWarning, Newspaper } from "lucide-react";
+import { Folder, Scale, FileWarning, Globe } from "lucide-react";
 
 export function DeskChrome({ children }: { children: ReactNode }) {
   return (
@@ -35,11 +35,38 @@ export function DeskChrome({ children }: { children: ReactNode }) {
                 <li>Social & Speech</li>
               </ul>
             </Panel>
-            <Panel title="Tools" icon={<Scale className="h-4 w-4" />}>
-              <p className="text-sm text-stone-300">Cross-reference at least two sources per event for credibility.</p>
+            
+            <Panel title="Press by Language" icon={<Globe className="h-4 w-4" />}>
+              <div className="space-y-3">
+                <LanguageButton 
+                  language="Spanish" 
+                  flag="🇪🇸" 
+                  description="Spanish language press coverage"
+                />
+                <LanguageButton 
+                  language="Russian" 
+                  flag="🇷🇺" 
+                  description="Russian language press coverage"
+                />
+                <LanguageButton 
+                  language="French" 
+                  flag="🇫🇷" 
+                  description="French language press coverage"
+                />
+              </div>
             </Panel>
-            <Panel title="Feeds" icon={<Newspaper className="h-4 w-4" />}>
-              <p className="text-sm text-stone-300">Top-5 by adjusted scandal score.</p>
+            
+            <Panel title="Investigation Tools" icon={<Scale className="h-4 w-4" />}>
+              <div className="space-y-2 text-sm text-stone-300">
+                <div className="p-2 rounded bg-stone-700/50">
+                  <p className="font-medium text-amber-300">Multi-Source Verification</p>
+                  <p className="text-xs text-stone-400">Cross-reference at least two sources per event for credibility.</p>
+                </div>
+                <div className="p-2 rounded bg-stone-700/50">
+                  <p className="font-medium text-amber-300">Perspective Analysis</p>
+                  <p className="text-xs text-stone-400">Adjust scoring based on ideological alignment.</p>
+                </div>
+              </div>
             </Panel>
           </aside>
           <main className="col-span-12 md:col-span-9">
@@ -48,6 +75,22 @@ export function DeskChrome({ children }: { children: ReactNode }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function LanguageButton({ language, flag, description }: { 
+  language: string; 
+  flag: string; 
+  description: string;
+}) {
+  return (
+    <button className="w-full p-2 rounded bg-stone-700/50 hover:bg-stone-700/70 transition-colors text-left group">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-lg">{flag}</span>
+        <span className="font-medium text-stone-200">{language}</span>
+      </div>
+      <p className="text-xs text-stone-400 group-hover:text-stone-300 transition-colors">{description}</p>
+    </button>
   );
 }
 

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { filterAndRank } from "@/lib/sampleData";
 import { SearchResponse, ScandalEvent } from "@/types/scandal";
-import { searchControversies } from "@/lib/webSearch";
+import { searchControversies, searchControversiesByLanguage } from "@/lib/webSearch";
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const runtime = 'nodejs';
@@ -10,6 +11,7 @@ export const runtime = 'nodejs';
 const querySchema = z.object({
   q: z.string().optional().default(""),
   p: z.coerce.number().min(0).max(100).optional().default(50),
+  lang: z.string().optional().default("en"), // NEW: Language parameter
 });
 
 export async function GET(req: NextRequest) {
@@ -17,20 +19,31 @@ export async function GET(req: NextRequest) {
   const parsed = querySchema.safeParse({
     q: searchParams.get("q") ?? "",
     p: searchParams.get("p") ?? "50",
+    lang: searchParams.get("lang") ?? "en", // NEW: Parse language parameter
   });
+  
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
-  const { q, p } = parsed.data;
-  // Try live web search; fallback to local sample
+  
+  const { q, p, lang } = parsed.data;
+  
+  // Try live web search with language support; fallback to local sample
   let events: ScandalEvent[] = [];
   try {
     if (q) {
-      events = await searchControversies(q);
+      if (lang && lang !== "en") {
+        // Use language-specific search
+        events = await searchControversiesByLanguage(q, lang);
+      } else {
+        // Use default search
+        events = await searchControversies(q);
+      }
     }
   } catch {
     // ignore and fallback
   }
+  
   let results;
   if (events.length > 0) {
     // IMPROVED: Better perspective adjustment calculation
@@ -77,10 +90,13 @@ export async function GET(req: NextRequest) {
   } else {
     results = filterAndRank(q, p);
   }
+  
   const payload: SearchResponse = {
     query: q,
     perspective: p,
+    language: lang, // NEW: Include language in response
     results,
   };
+  
   return NextResponse.json(payload);
 }

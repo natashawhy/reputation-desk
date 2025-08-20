@@ -14,11 +14,13 @@ export type ScandalEvent = {
   sources: SourceLink[]; // should be >= 2 for verified credibility
   baseScore: number; // 0-100 baseline scandal rating
   ideologicalTilt: number; // -100 (more scandalous to liberals) .. +100 (more scandalous to conservatives)
+  language?: string; // NEW: Language of the source material
 };
 
 export type SearchResponse = {
   query: string;
   perspective: number; // 0 liberal .. 100 conservative
+  language?: string; // NEW: Language used for search
   results: Array<{
     event: ScandalEvent;
     adjustedScore: number;
