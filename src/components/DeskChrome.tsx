@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Folder, Scale, FileWarning, Newspaper, Search, MagnifyingGlass, FileText, Clock, AlertTriangle } from "lucide-react";
+import { Scale, FileWarning, Newspaper, Search, FileText, Clock, AlertTriangle } from "lucide-react";
 
 export function DeskChrome({ children }: { children: ReactNode }) {
   return (
