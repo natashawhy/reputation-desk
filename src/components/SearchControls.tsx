@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { Search } from 'lucide-react';
 import { SearchResponse } from '@/types/scandal';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getTranslation, Language } from '@/lib/languages';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -11,6 +13,7 @@ export function SearchControls() {
   const [query, setQuery] = useState('');
   const [perspective, setPerspective] = useState(50);
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+  const { interfaceLanguage } = useLanguage();
 
   const { data, isLoading, error } = useSWR<SearchResponse, Error>(
     `/api/search?q=${encodeURIComponent(query)}&p=${perspective}&lang=${selectedLanguage}`,
@@ -35,19 +38,19 @@ export function SearchControls() {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-stone-700 bg-stone-800/60 p-3 backdrop-blur-sm shadow-inner">
-        <label className="mb-2 block text-sm text-stone-300">Search a brand or person</label>
+        <label className="mb-2 block text-sm text-stone-300">{getTranslation(interfaceLanguage, 'searchLabel')}</label>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
             <input
               className="w-full rounded-md border border-stone-600 bg-stone-900/60 pl-9 pr-3 py-2 text-sm outline-none focus:border-amber-500 backdrop-blur-sm"
-              placeholder="e.g. Brand A or Public Figure B"
+              placeholder={getTranslation(interfaceLanguage, 'searchPlaceholder')}
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
           </div>
           <div className="w-60">
-            <label className="mb-1 block text-xs text-stone-400">Perspective: Liberal ⟷ Conservative</label>
+            <label className="mb-1 block text-xs text-stone-400">{getTranslation(interfaceLanguage, 'perspectiveLabel')}</label>
             <input
               type="range"
               min={0}
@@ -62,31 +65,27 @@ export function SearchControls() {
         
         {/* Language Selection */}
         <div className="mt-3 pt-3 border-t border-stone-600">
-          <label className="mb-2 block text-xs text-stone-400">Search Language</label>
+          <label className="mb-2 block text-xs text-stone-400">{getTranslation(interfaceLanguage, 'languageLabel')}</label>
           <div className="flex gap-2">
             <LanguageButton 
-              language="en" 
               flag="🇺🇸" 
               name="English"
               isSelected={selectedLanguage === 'en'}
               onClick={() => handleLanguageSelect('en')}
             />
             <LanguageButton 
-              language="es" 
               flag="🇪🇸" 
               name="Español"
               isSelected={selectedLanguage === 'es'}
               onClick={() => handleLanguageSelect('es')}
             />
             <LanguageButton 
-              language="ru" 
               flag="🇷🇺" 
               name="Русский"
               isSelected={selectedLanguage === 'ru'}
               onClick={() => handleLanguageSelect('ru')}
             />
             <LanguageButton 
-              language="fr" 
               flag="🇫🇷" 
               name="Français"
               isSelected={selectedLanguage === 'fr'}
@@ -96,19 +95,17 @@ export function SearchControls() {
         </div>
       </div>
 
-      <ResultsPanel data={data} loading={isLoading} error={error ?? undefined} selectedLanguage={selectedLanguage} />
+      <ResultsPanel data={data} loading={isLoading} error={error ?? undefined} selectedLanguage={selectedLanguage} interfaceLanguage={interfaceLanguage} />
     </div>
   );
 }
 
 function LanguageButton({ 
-  language, 
   flag, 
   name, 
   isSelected, 
   onClick 
 }: { 
-  language: string; 
   flag: string; 
   name: string;
   isSelected: boolean;
@@ -131,14 +128,15 @@ function LanguageButton({
   );
 }
 
-function ResultsPanel({ data, loading, error, selectedLanguage }: { 
+function ResultsPanel({ data, loading, error, selectedLanguage, interfaceLanguage }: { 
   data?: SearchResponse; 
   loading: boolean; 
   error?: Error;
   selectedLanguage: string;
+  interfaceLanguage: Language;
 }) {
   if (error) {
-    return <div className="text-red-400">Error loading results</div>;
+    return <div className="text-red-400">{getTranslation(interfaceLanguage, 'errorLoading')}</div>;
   }
   
   const getLanguageName = (lang: string) => {
@@ -150,18 +148,18 @@ function ResultsPanel({ data, loading, error, selectedLanguage }: {
     <div className="rounded-lg border border-stone-700 bg-stone-800/60 shadow-inner backdrop-blur-sm">
       <div className="border-b border-stone-700 px-3 py-2 text-sm text-stone-300">
         <div className="flex items-center justify-between">
-          <span>Top results (prioritizes 2+ sources)</span>
+          <span>{getTranslation(interfaceLanguage, 'topResults')}</span>
           {selectedLanguage !== 'en' && (
             <span className="text-amber-400 text-xs">
-              Searching in {getLanguageName(selectedLanguage)}
+              {getTranslation(interfaceLanguage, 'searchingIn')} {getLanguageName(selectedLanguage)}
             </span>
           )}
         </div>
       </div>
       <div className="p-3">
-        {loading && <div className="text-stone-400 text-sm">Loading…</div>}
+        {loading && <div className="text-stone-400 text-sm">{getTranslation(interfaceLanguage, 'loading')}</div>}
         {!loading && data && data.results.length === 0 && (
-          <div className="text-stone-400 text-sm">No results found.</div>
+          <div className="text-stone-400 text-sm">{getTranslation(interfaceLanguage, 'noResults')}</div>
         )}
         {!loading && data && data.results.length > 0 && (
           <div className="space-y-3">
@@ -185,9 +183,9 @@ function ResultsPanel({ data, loading, error, selectedLanguage }: {
                       ))}
                     </div>
                   </div>
-                  <ScoreBadge score={adjustedScore} />
+                  <ScoreBadge score={adjustedScore} interfaceLanguage={interfaceLanguage} />
                 </div>
-                <ScoreBar score={adjustedScore} />
+                <ScoreBar score={adjustedScore} interfaceLanguage={interfaceLanguage} />
               </div>
             ))}
           </div>
@@ -197,19 +195,25 @@ function ResultsPanel({ data, loading, error, selectedLanguage }: {
   );
 }
 
-function ScoreBadge({ score }: { score: number }) {
+function ScoreBadge({ score, interfaceLanguage }: { score: number; interfaceLanguage: Language }) {
   const color = score >= 75 ? 'bg-red-600' : score >= 60 ? 'bg-amber-500' : 'bg-emerald-600';
   return (
-    <div className={`rounded-md ${color} px-2 py-1 text-xs font-semibold text-white shadow-sm`}>Scandal {Math.round(score)}</div>
+    <div className={`rounded-md ${color} px-2 py-1 text-xs font-semibold text-white shadow-sm`}>
+      {getTranslation(interfaceLanguage, 'scandal')} {Math.round(score)}
+    </div>
   );
 }
 
-function ScoreBar({ score }: { score: number }) {
+function ScoreBar({ score, interfaceLanguage }: { score: number; interfaceLanguage: Language }) {
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const gradient =
     'bg-gradient-to-r from-emerald-600 via-amber-500 to-red-600';
   return (
     <div className="mt-3 h-2 w-full rounded bg-stone-700">
+      <div className="flex justify-between text-xs text-stone-400 mb-1">
+        <span>{getTranslation(interfaceLanguage, 'lowRisk')}</span>
+        <span>{getTranslation(interfaceLanguage, 'highRisk')}</span>
+      </div>
       <div className={"h-2 rounded " + gradient} style={{ width: pct + '%' }} />
     </div>
   );

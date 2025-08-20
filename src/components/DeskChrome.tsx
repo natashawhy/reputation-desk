@@ -1,7 +1,12 @@
+'use client';
 import { ReactNode } from "react";
-import { Folder, Scale, FileWarning, Globe } from "lucide-react";
+import { Folder, Scale, FileWarning, Globe, Languages } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getTranslation } from "@/lib/languages";
 
 export function DeskChrome({ children }: { children: ReactNode }) {
+  const { interfaceLanguage, setInterfaceLanguage, getLanguageInfo } = useLanguage();
+  
   return (
     <div className="min-h-screen bg-stone-900 text-stone-100 relative">
       {/* Evidence board background overlay */}
@@ -18,53 +23,79 @@ export function DeskChrome({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-stone-900/70">
           <div className="flex items-center gap-3 py-4">
             <Folder className="text-amber-400" />
-            <h1 className="text-xl font-semibold tracking-wide">
-              Reputation Desk
-            </h1>
-            <span className="text-stone-400">Brand & Personality Controversy Tracker</span>
+            <div className="flex-1">
+              <h1 className="text-xl font-semibold tracking-wide">
+                {getTranslation(interfaceLanguage, 'title')}
+              </h1>
+              <span className="text-stone-400">{getTranslation(interfaceLanguage, 'subtitle')}</span>
+            </div>
+            
+            {/* Interface Language Switcher */}
+            <div className="flex items-center gap-2">
+              <Languages className="h-4 w-4 text-stone-400" />
+              <div className="flex gap-1">
+                {(['en', 'es', 'ru', 'fr'] as const).map((lang) => {
+                  const langInfo = getLanguageInfo(lang);
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => setInterfaceLanguage(lang)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        interfaceLanguage === lang 
+                          ? 'bg-amber-600 text-white' 
+                          : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                      }`}
+                      title={`Switch to ${langInfo.name}`}
+                    >
+                      {langInfo.flag}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </header>
         <div className="grid grid-cols-12 gap-4">
           <aside className="col-span-12 md:col-span-3 space-y-3">
-            <Panel title="Dossiers" icon={<FileWarning className="h-4 w-4" />}>
+            <Panel title={getTranslation(interfaceLanguage, 'dossiers')} icon={<FileWarning className="h-4 w-4" />}>
               <ul className="space-y-2 text-sm text-stone-300">
-                <li>Advertising & Campaigns</li>
-                <li>Finance & Donations</li>
-                <li>Labor & Supply Chain</li>
-                <li>Privacy & Security</li>
-                <li>Social & Speech</li>
+                <li>{getTranslation(interfaceLanguage, 'advertising')}</li>
+                <li>{getTranslation(interfaceLanguage, 'finance')}</li>
+                <li>{getTranslation(interfaceLanguage, 'labor')}</li>
+                <li>{getTranslation(interfaceLanguage, 'privacy')}</li>
+                <li>{getTranslation(interfaceLanguage, 'social')}</li>
               </ul>
             </Panel>
             
-            <Panel title="Press by Language" icon={<Globe className="h-4 w-4" />}>
+            <Panel title={getTranslation(interfaceLanguage, 'pressByLanguage')} icon={<Globe className="h-4 w-4" />}>
               <div className="space-y-3">
                 <LanguageButton 
                   language="Spanish" 
                   flag="🇪🇸" 
-                  description="Spanish language press coverage"
+                  description={getTranslation(interfaceLanguage, 'spanishPress')}
                 />
                 <LanguageButton 
                   language="Russian" 
                   flag="🇷🇺" 
-                  description="Russian language press coverage"
+                  description={getTranslation(interfaceLanguage, 'russianPress')}
                 />
                 <LanguageButton 
                   language="French" 
                   flag="🇫🇷" 
-                  description="French language press coverage"
+                  description={getTranslation(interfaceLanguage, 'frenchPress')}
                 />
               </div>
             </Panel>
             
-            <Panel title="Investigation Tools" icon={<Scale className="h-4 w-4" />}>
+            <Panel title={getTranslation(interfaceLanguage, 'investigationTools')} icon={<Scale className="h-4 w-4" />}>
               <div className="space-y-2 text-sm text-stone-300">
                 <div className="p-2 rounded bg-stone-700/50">
-                  <p className="font-medium text-amber-300">Multi-Source Verification</p>
-                  <p className="text-xs text-stone-400">Cross-reference at least two sources per event for credibility.</p>
+                  <p className="font-medium text-amber-300">{getTranslation(interfaceLanguage, 'multiSourceVerification')}</p>
+                  <p className="text-xs text-stone-400">{getTranslation(interfaceLanguage, 'multiSourceDescription')}</p>
                 </div>
                 <div className="p-2 rounded bg-stone-700/50">
-                  <p className="font-medium text-amber-300">Perspective Analysis</p>
-                  <p className="text-xs text-stone-400">Adjust scoring based on ideological alignment.</p>
+                  <p className="font-medium text-amber-300">{getTranslation(interfaceLanguage, 'perspectiveAnalysis')}</p>
+                  <p className="text-xs text-stone-400">{getTranslation(interfaceLanguage, 'perspectiveDescription')}</p>
                 </div>
               </div>
             </Panel>
